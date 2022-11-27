@@ -34,7 +34,7 @@ namespace utils {
     [](const graph::adjacency_matrix::graph_t* graph, uint32_t src_node, uint32_t dest_node, bool directed) -> void {
         if (graph::adjacency_matrix::has_edge(graph, src_node, dest_node)) {
             // each line in format: `  <from-node> ('->' | '--') <to-node>';'`
-            fmt::print(stderr, "\t{} {} {};\n", src_node, (directed ? "->" : "--"), dest_node);
+            fmt::print("  {} {} {};\n", src_node, (directed ? "->" : "--"), dest_node);
         }
     };
 

@@ -11,3 +11,7 @@ add_library(${PROJECT_NAME} SHARED
 target_include_directories(${PROJECT_NAME}
     PRIVATE ${_INCLUDE}
 )
+
+# 3rd-party libraries
+find_package(fmt)
+target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)

@@ -1,11 +1,14 @@
-#include <iostream>
+// C++ standard library
 #include <string_view>
 
-#define __STDC_FORMAT_MACROS 1
-#include <cinttypes>
+// C standard library
 #include <cstdint>
 #include <cstdlib>
 
+// lib{fmt}
+#include <fmt/format.h>
+
+// declarations
 #include <graphs/adjacency_matrix.hpp>
 
 constexpr static uint32_t MAX_NODES = 2048;
@@ -31,13 +34,12 @@ namespace utils {
     [](const graph::adjacency_matrix::graph_t* graph, uint32_t src_node, uint32_t dest_node, bool directed) -> void {
         if (graph::adjacency_matrix::has_edge(graph, src_node, dest_node)) {
             // each line in format: `  <from-node> ('->' | '--') <to-node>';'`
-            auto edge_str = directed ? "->" : "--";
-            std::printf("  %" PRIu32 " %s %" PRIu32 ";\n", src_node, edge_str, dest_node);
+            fmt::print(stderr, "\t{} {} {};\n", src_node, (directed ? "->" : "--"), dest_node);
         }
     };
 
     /**
-     * @brief Checks if an edge in out of bounds for a given graph, given its source and destination nodes.
+     * @brief Checks if an edge is out of bounds for a given graph, given its source and destination nodes.
      * 
      * @param graph const pointer to an adjacency matrix graph data structure.
      * @param src_node Index of the source node in the adjacency matrix.
@@ -50,19 +52,24 @@ namespace utils {
     constexpr static
     auto invalid_edge_range = 
     [](const graph::adjacency_matrix::graph_t* graph, uint32_t src_node, uint32_t dest_node, const std::string_view caller, bool err_logging = true) -> bool {
+
         if (graph == nullptr || graph->edges == nullptr) {
             if (err_logging) {
-                std::cerr << 
-                    "[error] In `" << caller << "`:\n"
-                    "    Unable to access graph data.\n";
+                fmt::print(stderr, 
+                    "[error] In `{}`:\n"
+                    "\tUnable to access graph data.\n",
+                    caller
+                );
             }
             return true;
         }
         if (src_node >= graph->node_count || dest_node >= graph->node_count) {
             if (err_logging) {
-                std::cerr << 
-                    "[error] In `" << caller << "`:\n"
-                    "    Node index out is of range! Interval must be in the range [0, " << graph->node_count << ").\n";
+                fmt::print(stderr, 
+                    "[error] In `{}`:\n"
+                    "\tNode index out is of range! Interval must be in the range [0, {}).\n", 
+                    caller, graph->node_count
+                );
             }
             return true;
         }
@@ -74,19 +81,21 @@ namespace utils {
 graph::adjacency_matrix::graph_t* graph::adjacency_matrix::create(uint32_t node_count, GraphType type) {
 
     if (node_count > MAX_NODES) {
-        std::cerr << 
-            "[error] In `graph::adjacency_matrix::create(uint32_t)`:\n"
-            "    Unable to create a graph with " << node_count << " nodes. Max number of nodes is set to" << MAX_NODES
-        << ".\n";
+        fmt::print(stderr, 
+            "[error] In `ggraph::adjacency_matrix::create(uint32_t)`:\n"
+            "\tUnable to create a graph with {} nodes. Max number of nodes is set to {}.\n",
+            node_count, MAX_NODES
+        );
         return nullptr;
     }
 
     // allocate memory for and initialize struct
     graph_t* g = (graph_t*)malloc(sizeof(graph_t));
     if (g == nullptr) {
-        std::cerr << 
+        fmt::print(stderr, 
             "[error] In `graph::adjacency_matrix::create(uint32_t)`:\n"
-            "    Failed to allocate memory for graph structure.\n";
+            "\tFailed to allocate memory for graph structure.\n"
+        );
         return nullptr;
     }
     g->type = type;
@@ -95,9 +104,10 @@ graph::adjacency_matrix::graph_t* graph::adjacency_matrix::create(uint32_t node_
     // allocate adjacency matrix rows
     g->edges = (bool**)calloc(sizeof(bool*), g->node_count);
     if (g->edges == nullptr) {
-        std::cerr << 
+        fmt::print(stderr, 
             "[error] In `graph::adjacency_matrix::create(uint32_t)`:\n"
-            "    Failed to allocate memory for adjacency matrix.\n";
+            "\tFailed to allocate memory for adjacency matrix.\n"
+        );
         free(g);
         return nullptr;
     }
@@ -107,9 +117,10 @@ graph::adjacency_matrix::graph_t* graph::adjacency_matrix::create(uint32_t node_
     for (uint32_t row = 0; row < g->node_count; ++row) {
         g->edges[row] = (bool*)calloc(sizeof(bool), g->node_count);
         if (g->edges[row] == nullptr) {
-            std::cerr << 
+            fmt::print(stderr, 
                 "[error] In `graph::adjacency_matrix::create(uint32_t)`:\n"
-                "    Failed to allocate memory for adjacency matrix.\n";
+                "\tFailed to allocate memory for adjacency matrix.\n"
+            );
             failed = true;
             break;
         }
@@ -161,7 +172,7 @@ bool graph::adjacency_matrix::has_edge(const graph_t* graph, uint32_t src_node, 
 bool graph::adjacency_matrix::add_edge(graph_t* graph, uint32_t src_node, uint32_t dest_node) {
 
     if (utils::invalid_edge_range(graph, src_node, dest_node, 
-        "bool graph::adjacency_matrix::add_edge(graph_t *, uint32_t, uint32_t)")
+        "graph::adjacency_matrix::add_edge(graph_t *, uint32_t, uint32_t)")
     ) { return false; }
 
     const bool _directed = directed(graph);
@@ -186,7 +197,7 @@ bool graph::adjacency_matrix::add_edge(graph_t* graph, uint32_t src_node, uint32
 void graph::adjacency_matrix::remove_edge(graph_t* graph, uint32_t src_node, uint32_t dest_node) {
     
     if (utils::invalid_edge_range(graph, src_node, dest_node, 
-        "void graph::adjacency_matrix::remove_edge(graph_t *, uint32_t, uint32_t)")
+        "graph::adjacency_matrix::remove_edge(graph_t *, uint32_t, uint32_t)")
     ) { return; }
 
     // remove edge if it exists
@@ -205,7 +216,7 @@ void graph::adjacency_matrix::print(const graph_t* graph) {
     const bool _directed = directed(graph);
 
     // BEGIN graph
-    std::cout << (_directed ? "digraph" : "graph") << " {\n";
+    fmt::print("{} {{\n", _directed ? "digraph" : "graph");
 
     // print edge list, if any
     for (uint32_t row = 0; graph && row < graph->node_count; ++row) {
@@ -218,18 +229,22 @@ void graph::adjacency_matrix::print(const graph_t* graph) {
     }
 
     // END graph, flush stdout
-    std::cout << '}' << std::endl;
+    fmt::print("}}\n");
+    fflush(stdout);
 }
 
 /**
  * @todo
- *   [ ] Convert to a CMake project
- *       [ ] targets: graphs, viz
- *       [ ] ling graphs against {fmt}
- *   [ ] Use lib{fmt} for outputting to stdout and stderr
- *   [ ] Make this a class instead so you don't have to keep passing pointers to graphs around
- *   [ ] Add private const member that indicates whether the graph is directed or not (initialize on constructor)
+ *   [x] Convert to a CMake project
+ *       [x] targets: graphs, viz, tests
+ *       [x] link graphs against lib{fmt}
+ *   [x] Use lib{fmt} for outputting to stdout and stderr
+ *   [ ] Create utility for logging to standard streams
+ *   [ ] Use C++ features
+ *       [ ] Make this a class instead so you don't have to keep passing pointers to graphs around
+ *       [ ] Add private const member that indicates whether the graph is directed or not (initialize on constructor)
+ *       [ ] use new and delete instead of malloc/calloc and free
  *   [ ] Use managed pointers for holding edge data (std::unique_ptr)
- *   [ ] Implemet a graph_node_t structure to hold node information instead of using just a matrix of boolean values
+ *   [ ] Implemet a graph_node_t structure to hold edge information instead of using just a matrix of boolean values
  *   [ ] Implement a graph using the adjacency list approach
 */
